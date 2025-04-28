@@ -7,43 +7,69 @@
 </head>
 <body>
     <h1>Simple PyScript App</h1>
-    <textarea id="input-text">Enter some text</textarea>
+    <textarea id="input-text" style="width: 100%; height: 200px;">Enter some text</textarea><br><br>
     <button py-click="display_text">Run</button>
     <p id="output-text">text</p>
 
     <script type="py">
-def f(au):
-    r=au.split(", ")
-    if len(r)==2:
-        return r[0]+" "+r[1][0]+"."
-    if len(r)==1:
-        return r[0]
+from pyscript import document
+
+def format_author(au):
+    
+    r = au.strip().split(", ")
+    if len(r) == 2:
+        lastname, firstname = r
+        initials = "".join([n[0] + "." for n in firstname.split()])
+        return f"{lastname} {initials}"
+    return au.strip()
 
 def convert(ris_text):
-    title=""
-    volume=""
-    AU=[]
-    for i in ris_text.splitlines(True):
-        r=i.split("  - ")
-        # print(r[0], r[1])
-        if r[0]=="T1":
-            title=r[1][0:-1]
-        if r[0]=="JO":
-            journal=r[1][0:-1]
-        if r[0]=="PY":
-            year=r[1][0:-1]
-        if r[0]=="VL":
-            volume=r[1][0:-1]
-        if r[0]=="SP":
-            sp=r[1][0:-1]
-        if r[0]=="DO":
-            doi=r[1][0:-1]
-        if r[0]=="AU":
-            au=r[1][0:-1]
-            AU.append(f(au))
-    return "%s %s. // %s. %s. %s. %s. DOI: %s"%(", ".join(AU), title, journal, year, volume, sp, doi)
-    
-from pyscript import document
+    title = ""
+    journal = ""
+    year = ""
+    volume = ""
+    sp = ""
+    doi = ""
+    AU = []
+
+    for line in ris_text.splitlines():
+        if "  - " not in line:
+            continue  # пропустити неправильні рядки
+        k, v = line.split("  - ", 1)
+        v = v.strip()
+        if k == "T1" or k == "TI":
+            title = v
+        elif k == "JO" or k == "SO":
+            journal = v
+        elif k == "PY":
+            year = v
+        elif k == "VL":
+            volume = v
+        elif k == "SP":
+            sp = v
+        elif k == "DO":
+            doi = v
+        elif k == "AU":
+            AU.append(format_author(v))
+
+    parts = []
+    if AU:
+        parts.append(", ".join(AU))
+    if title:
+        parts.append(title)
+    if journal:
+        parts.append("// " + journal)
+    if year:
+        parts.append(year)
+    if volume:
+        parts.append("Т." + volume)
+    if sp:
+        parts.append("С." + sp)
+    if doi:
+        parts.append("DOI: " + doi)
+
+    return ". ".join(parts) + "."
+
 def display_text(*args):
     input_text = document.getElementById("input-text").value
     output = document.getElementById("output-text")
